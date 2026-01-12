@@ -1,0 +1,22 @@
+# Rust
+/target/
+Cargo.lock
+*.swp
+*.swo
+
+# Ruby
+lib/methodray/methodray.*
+lib/methodray/*.{so,bundle,dll}
+*.gem
+.bundle/
+vendor/
+
+# System
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Build
+tmp/
