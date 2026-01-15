@@ -1,3 +1,4 @@
+require 'rbs'
 require_relative "methodray/version"
 require_relative "methodray/methodray"  # ネイティブ拡張
 

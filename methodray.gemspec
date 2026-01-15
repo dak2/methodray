@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
     "exe/*",
     "ext/**/*",
     "src/**/*.rs",
+    "src/**/*.rb",
     "Cargo.toml",
     "Cargo.lock",
     "README.md"
@@ -31,6 +32,10 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.extensions    = ["ext/extconf.rb"]
 
+  # Runtime dependencies
+  spec.add_dependency "rbs", "~> 3.0"
+
+  # Development dependencies
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "rb_sys", "~> 0.9"
   spec.add_development_dependency "rake-compiler", "~> 1.2"

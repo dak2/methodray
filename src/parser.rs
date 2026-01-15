@@ -3,9 +3,9 @@ use ruby_prism::{parse, ParseResult};
 use std::fs;
 use std::path::Path;
 
-/// Rubyソースコードをパースしてruby-prismのASTを返す
+/// Parse Ruby source code and return ruby-prism AST
 ///
-/// 注意: 内部で Box::leak を使用して 'static ライフタイムを確保します
+/// Note: Uses Box::leak internally to ensure 'static lifetime
 pub fn parse_ruby_file(file_path: &Path) -> Result<ParseResult<'static>> {
     let source = fs::read_to_string(file_path)
         .with_context(|| format!("Failed to read file: {}", file_path.display()))?;
@@ -13,14 +13,14 @@ pub fn parse_ruby_file(file_path: &Path) -> Result<ParseResult<'static>> {
     parse_ruby_source(&source, file_path.to_string_lossy().to_string())
 }
 
-/// Rubyソースコード文字列をパース
+/// Parse Ruby source code string
 pub fn parse_ruby_source(source: &str, file_name: String) -> Result<ParseResult<'static>> {
-    // ruby-prism は &[u8] を受け取る
-    // Box::leak を使用して 'static ライフタイムを確保（メモリリークするが解析ツールでは問題ない）
+    // ruby-prism accepts &[u8]
+    // Use Box::leak to ensure 'static lifetime (memory leak is acceptable for analysis tools)
     let source_bytes: &'static [u8] = Box::leak(source.as_bytes().to_vec().into_boxed_slice());
     let parse_result = parse(source_bytes);
 
-    // パースエラーチェック
+    // Check parse errors
     let error_messages: Vec<String> = parse_result
         .errors()
         .map(|e| {
