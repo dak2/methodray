@@ -20,3 +20,6 @@ vendor/
 
 # Build
 tmp/
+
+# Claude 
+.claude/Claude.local.md
