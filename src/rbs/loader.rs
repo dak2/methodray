@@ -110,11 +110,35 @@ impl<'a> RbsLoader<'a> {
 }
 
 /// Helper function to register RBS methods to GlobalEnv
+/// Uses cache to avoid slow Ruby FFI calls
 pub fn register_rbs_methods(genv: &mut GlobalEnv, ruby: &Ruby) -> Result<usize, Error> {
-    let loader = RbsLoader::new(ruby)?;
-    let methods = loader.load_methods()?;
-    let count = methods.len();
+    use crate::cache::RbsCache;
 
+    let methodray_version = env!("CARGO_PKG_VERSION");
+
+    // Try to get RBS version
+    let rbs_version_value: Value = ruby
+        .eval("RBS::VERSION")
+        .unwrap_or_else(|_| ruby.eval("'unknown'").unwrap());
+    let rbs_version: String = String::try_convert(rbs_version_value)
+        .unwrap_or_else(|_| "unknown".to_string());
+
+    // Try to load from cache
+    let methods = if let Ok(cache) = RbsCache::load() {
+        if cache.is_valid(methodray_version, &rbs_version) {
+            eprintln!("Loaded {} methods from cache", cache.methods.len());
+            cache.to_method_infos()
+        } else {
+            eprintln!("Cache invalid, reloading from RBS...");
+            let methods = load_and_cache_rbs_methods(ruby, methodray_version, &rbs_version)?;
+            methods
+        }
+    } else {
+        eprintln!("No cache found, loading from RBS...");
+        load_and_cache_rbs_methods(ruby, methodray_version, &rbs_version)?
+    };
+
+    let count = methods.len();
     for method_info in methods {
         let receiver_type = Type::Instance {
             class_name: method_info.receiver_class,
@@ -126,6 +150,32 @@ pub fn register_rbs_methods(genv: &mut GlobalEnv, ruby: &Ruby) -> Result<usize, 
         );
     }
 
-    eprintln!("Loaded {} methods from RBS", count);
     Ok(count)
+}
+
+/// Load RBS methods and save to cache
+fn load_and_cache_rbs_methods(
+    ruby: &Ruby,
+    version: &str,
+    rbs_version: &str,
+) -> Result<Vec<RbsMethodInfo>, Error> {
+    use crate::cache::RbsCache;
+
+    let loader = RbsLoader::new(ruby)?;
+    let methods = loader.load_methods()?;
+
+    // Save to cache
+    let cache = RbsCache::from_method_infos(
+        methods.clone(),
+        version.to_string(),
+        rbs_version.to_string(),
+    );
+
+    if let Err(e) = cache.save() {
+        eprintln!("Warning: Failed to save RBS cache: {}", e);
+    } else {
+        eprintln!("Saved {} methods to cache", methods.len());
+    }
+
+    Ok(methods)
 }

@@ -1,10 +1,20 @@
 use crate::graph::{BoxId, BoxTrait, ChangeSet, EdgeUpdate, Source, Vertex, VertexId};
+use crate::source_map::SourceLocation;
 use crate::types::Type;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Method information
 pub struct MethodInfo {
     pub return_type: Type,
+}
+
+/// Type error information for diagnostic reporting
+#[derive(Debug, Clone)]
+pub struct TypeError {
+    pub receiver_type: Type,
+    pub method_name: String,
+    pub vertex_id: VertexId, // Location in the graph
+    pub location: Option<SourceLocation>, // Source code location
 }
 
 /// Global environment: core of the type inference engine
@@ -21,6 +31,9 @@ pub struct GlobalEnv {
     /// Method definitions
     methods: HashMap<(Type, String), MethodInfo>,
 
+    /// Type errors collected during analysis
+    pub type_errors: Vec<TypeError>,
+
     /// ID generation
     next_vertex_id: usize,
     pub next_box_id: usize,
@@ -35,6 +48,7 @@ impl GlobalEnv {
             run_queue: VecDeque::new(),
             run_queue_set: HashSet::new(),
             methods: HashMap::new(),
+            type_errors: Vec::new(),
             next_vertex_id: 0,
             next_box_id: 0,
         }
@@ -138,6 +152,22 @@ impl GlobalEnv {
                 return_type: ret_ty,
             },
         );
+    }
+
+    /// Record a type error (undefined method)
+    pub fn record_type_error(
+        &mut self,
+        receiver_type: Type,
+        method_name: String,
+        vertex_id: VertexId,
+        location: Option<SourceLocation>,
+    ) {
+        self.type_errors.push(TypeError {
+            receiver_type,
+            method_name,
+            vertex_id,
+            location,
+        });
     }
 
     /// Add Box to queue

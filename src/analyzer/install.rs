@@ -1,5 +1,6 @@
 use crate::env::{GlobalEnv, LocalEnv};
 use crate::graph::{BoxId, ChangeSet, MethodCallBox, VertexId};
+use crate::source_map::SourceLocation;
 use crate::types::Type;
 use ruby_prism::Node;
 
@@ -8,14 +9,16 @@ pub struct AstInstaller<'a> {
     genv: &'a mut GlobalEnv,
     lenv: &'a mut LocalEnv,
     changes: ChangeSet,
+    source: &'a str,
 }
 
 impl<'a> AstInstaller<'a> {
-    pub fn new(genv: &'a mut GlobalEnv, lenv: &'a mut LocalEnv) -> Self {
+    pub fn new(genv: &'a mut GlobalEnv, lenv: &'a mut LocalEnv, source: &'a str) -> Self {
         Self {
             genv,
             lenv,
             changes: ChangeSet::new(),
+            source,
         }
     }
 
@@ -101,14 +104,23 @@ impl<'a> AstInstaller<'a> {
             // Get method name
             let method_name = String::from_utf8_lossy(call_node.name().as_slice()).to_string();
 
+            // Extract source location from AST node with source code
+            let location = SourceLocation::from_prism_location_with_source(&node.location(), self.source);
+
             // Create Vertex for return value
             let ret_vtx = self.genv.new_vertex();
 
-            // Create MethodCallBox
+            // Create MethodCallBox with location
             let box_id = BoxId(self.genv.next_box_id);
             self.genv.next_box_id += 1;
 
-            let call_box = MethodCallBox::new(box_id, recv_vtx, method_name, ret_vtx);
+            let call_box = MethodCallBox::new(
+                box_id,
+                recv_vtx,
+                method_name,
+                ret_vtx,
+                Some(location),
+            );
             self.genv.boxes.insert(box_id, Box::new(call_box));
             self.genv.add_run(box_id);
 
@@ -139,7 +151,7 @@ mod tests {
 
         let mut genv = GlobalEnv::new();
         let mut lenv = LocalEnv::new();
-        let mut installer = AstInstaller::new(&mut genv, &mut lenv);
+        let mut installer = AstInstaller::new(&mut genv, &mut lenv, source);
 
         // ruby-prism correct API: get top-level node with node()
         let root = parse_result.node();
@@ -169,7 +181,7 @@ y = 42
 
         let mut genv = GlobalEnv::new();
         let mut lenv = LocalEnv::new();
-        let mut installer = AstInstaller::new(&mut genv, &mut lenv);
+        let mut installer = AstInstaller::new(&mut genv, &mut lenv, source);
 
         let root = parse_result.node();
 
@@ -204,7 +216,7 @@ y = x.upcase
         genv.register_builtin_method(Type::string(), "upcase", Type::string());
 
         let mut lenv = LocalEnv::new();
-        let mut installer = AstInstaller::new(&mut genv, &mut lenv);
+        let mut installer = AstInstaller::new(&mut genv, &mut lenv, source);
 
         let root = parse_result.node();
 
@@ -240,7 +252,7 @@ y = x.upcase.downcase
         genv.register_builtin_method(Type::string(), "downcase", Type::string());
 
         let mut lenv = LocalEnv::new();
-        let mut installer = AstInstaller::new(&mut genv, &mut lenv);
+        let mut installer = AstInstaller::new(&mut genv, &mut lenv, source);
 
         let root = parse_result.node();
 

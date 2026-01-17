@@ -1,6 +1,7 @@
 use crate::env::GlobalEnv;
 use crate::graph::change_set::ChangeSet;
 use crate::graph::vertex::VertexId;
+use crate::source_map::SourceLocation;
 use crate::types::Type;
 
 /// Unique ID for Box
@@ -20,15 +21,23 @@ pub struct MethodCallBox {
     recv: VertexId,
     method_name: String,
     ret: VertexId,
+    location: Option<SourceLocation>, // Source code location
 }
 
 impl MethodCallBox {
-    pub fn new(id: BoxId, recv: VertexId, method_name: String, ret: VertexId) -> Self {
+    pub fn new(
+        id: BoxId,
+        recv: VertexId,
+        method_name: String,
+        ret: VertexId,
+        location: Option<SourceLocation>,
+    ) -> Self {
         Self {
             id,
             recv,
             method_name,
             ret,
+            location,
         }
     }
 }
@@ -64,11 +73,12 @@ impl BoxTrait for MethodCallBox {
                 // Add edge to return value
                 changes.add_edge(ret_src_id, self.ret);
             } else {
-                // Warn if method not found (to be extended as diagnostic feature later)
-                eprintln!(
-                    "Warning: Undefined method: {}#{}",
-                    recv_ty.show(),
-                    self.method_name
+                // Record type error for diagnostic reporting
+                genv.record_type_error(
+                    recv_ty.clone(),
+                    self.method_name.clone(),
+                    self.ret, // Use return value vertex as error location
+                    self.location.clone(),
                 );
             }
         }
@@ -105,6 +115,7 @@ mod tests {
             x_vtx,
             "upcase".to_string(),
             ret_vtx,
+            None, // No location in test
         );
 
         // Execute Box
@@ -135,6 +146,7 @@ mod tests {
             x_vtx,
             "unknown_method".to_string(),
             ret_vtx,
+            None, // No location in test
         );
 
         let mut changes = ChangeSet::new();

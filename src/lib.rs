@@ -6,6 +6,9 @@ mod graph;
 mod env;
 mod analyzer;
 mod rbs;
+mod cache;
+mod diagnostics;
+mod source_map;
 
 use env::GlobalEnv;
 
@@ -45,7 +48,7 @@ impl Analyzer {
         rbs::register_rbs_methods(&mut genv, &ruby)?;
 
         let mut lenv = LocalEnv::new();
-        let mut installer = AstInstaller::new(&mut genv, &mut lenv);
+        let mut installer = AstInstaller::new(&mut genv, &mut lenv, &source);
 
         // Process AST
         let root = parse_result.node();
