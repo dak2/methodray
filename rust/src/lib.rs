@@ -17,5 +17,8 @@ pub mod rbs;
 #[cfg(any(feature = "cli", feature = "lsp"))]
 pub mod checker;
 
+#[cfg(feature = "cli")]
+pub mod cli;
+
 #[cfg(feature = "lsp")]
 pub mod lsp;

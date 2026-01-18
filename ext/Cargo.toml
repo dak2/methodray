@@ -8,6 +8,17 @@ crate-type = ["cdylib"]
 name = "methodray"
 path = "src/lib.rs"
 
+[[bin]]
+name = "methodray-cli"
+path = "src/cli.rs"
+required-features = ["cli"]
+
+[features]
+default = []
+cli = ["methodray-core/cli", "dep:clap", "dep:anyhow"]
+
 [dependencies]
 methodray-core = { path = "../rust", features = ["ruby-ffi"] }
 magnus = "0.8"
+clap = { version = "4", features = ["derive"], optional = true }
+anyhow = { version = "1", optional = true }

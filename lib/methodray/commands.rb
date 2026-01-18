@@ -2,6 +2,8 @@
 
 module MethodRay
   module Commands
+    COMMANDS_DIR = __dir__
+
     class << self
       def help
         puts <<~HELP
@@ -57,40 +59,19 @@ module MethodRay
 
       def find_rust_binary
         # Platform-specific binary name
-        binary_name = Gem.win_platform? ? 'methodray.exe' : 'methodray'
-
-        # Determine Ruby platform identifier
-        ruby_platform = detect_ruby_platform
+        cli_binary = Gem.win_platform? ? 'methodray-cli.exe' : 'methodray-cli'
+        legacy_binary = Gem.win_platform? ? 'methodray.exe' : 'methodray'
 
         candidates = [
-          # Precompiled binary in gem (platform-specific directory)
-          File.expand_path("../#{ruby_platform}/#{binary_name}", __dir__),
-          # Precompiled binary in gem (lib/methodray directory)
-          File.expand_path("../#{binary_name}", __dir__),
-          # Development: rust/target/release
-          File.expand_path("../../../rust/target/release/#{binary_name}", __dir__),
-          # Development: target/release (from project root)
-          File.expand_path("../../../target/release/#{binary_name}", __dir__)
+          # CLI binary built during gem install (lib/methodray directory)
+          File.expand_path(cli_binary, COMMANDS_DIR),
+          # Development: target/release (project root)
+          File.expand_path("../../target/release/#{cli_binary}", COMMANDS_DIR),
+          # Development: rust/target/release (legacy standalone binary)
+          File.expand_path("../../rust/target/release/#{legacy_binary}", COMMANDS_DIR)
         ]
 
         candidates.find { |path| File.executable?(path) }
-      end
-
-      def detect_ruby_platform
-        cpu = case RbConfig::CONFIG['host_cpu']
-              when /x86_64|amd64/ then 'x86_64'
-              when /arm64|aarch64/ then 'arm64'
-              else RbConfig::CONFIG['host_cpu']
-              end
-
-        os = case RbConfig::CONFIG['host_os']
-             when /darwin/ then 'darwin'
-             when /linux/ then 'linux'
-             when /mingw|mswin/ then 'mingw'
-             else RbConfig::CONFIG['host_os']
-             end
-
-        "#{cpu}-#{os}"
       end
     end
   end
