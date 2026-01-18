@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rbs'
 
 # TODO: use ruby-rbs crate when available
@@ -20,29 +22,27 @@ module Rbs
       results = []
 
       TARGET_CLASSES.each do |class_name|
-        begin
-          type_name = ::RBS::TypeName.new(
-            name: class_name.to_sym,
-            namespace: ::RBS::Namespace.root
-          )
+        type_name = ::RBS::TypeName.new(
+          name: class_name.to_sym,
+          namespace: ::RBS::Namespace.root
+        )
 
-          definition = @builder.build_instance(type_name)
+        definition = @builder.build_instance(type_name)
 
-          definition.methods.each do |method_name, method_def|
-            method_type = method_def.method_types.first
-            next unless method_type
+        definition.methods.each do |method_name, method_def|
+          method_type = method_def.method_types.first
+          next unless method_type
 
-            return_type = method_type.type.return_type.to_s
+          return_type = method_type.type.return_type.to_s
 
-            results << {
-              receiver_class: class_name,
-              method_name: method_name.to_s,
-              return_type: return_type
-            }
-          end
-        rescue => e
-          warn "Skipped #{class_name}: #{e.message}" if ENV['DEBUG']
+          results << {
+            receiver_class: class_name,
+            method_name: method_name.to_s,
+            return_type: return_type
+          }
         end
+      rescue StandardError => e
+        warn "Skipped #{class_name}: #{e.message}" if ENV['DEBUG']
       end
 
       results

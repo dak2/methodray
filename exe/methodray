@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-require_relative "../lib/methodray"
-require_relative "../lib/methodray/cli"
+require_relative '../lib/methodray'
+require_relative '../lib/methodray/cli'
 
 MethodRay::CLI.start(ARGV)

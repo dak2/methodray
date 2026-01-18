@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module MethodRay
   module Commands
     class << self
@@ -23,15 +25,15 @@ module MethodRay
       end
 
       def check(args)
-        exec_rust_cli("check", args)
+        exec_rust_cli('check', args)
       end
 
       def watch(args)
-        exec_rust_cli("watch", args)
+        exec_rust_cli('watch', args)
       end
 
       def clear_cache(args)
-        exec_rust_cli("clear-cache", args)
+        exec_rust_cli('clear-cache', args)
       end
 
       private
@@ -40,8 +42,13 @@ module MethodRay
         binary_path = find_rust_binary
 
         unless binary_path
-          $stderr.puts "Error: Rust binary not found. Please build it first:"
-          $stderr.puts "  cargo build --release --bin methodray --features cli"
+          warn 'Error: CLI binary not found.'
+          warn ''
+          warn 'For development, build with:'
+          warn '  cd rust && cargo build --release --bin methodray --features cli'
+          warn ''
+          warn 'If installed via gem, this might be a platform compatibility issue.'
+          warn 'Please report at: https://github.com/dak2/method-ray/issues'
           exit 1
         end
 
@@ -49,13 +56,41 @@ module MethodRay
       end
 
       def find_rust_binary
+        # Platform-specific binary name
+        binary_name = Gem.win_platform? ? 'methodray.exe' : 'methodray'
+
+        # Determine Ruby platform identifier
+        ruby_platform = detect_ruby_platform
+
         candidates = [
-          File.expand_path("../../target/release/methodray", __dir__),
-          File.expand_path("../../../target/release/methodray", __dir__),
-          File.expand_path("../../ext/target/release/methodray", __dir__),
+          # Precompiled binary in gem (platform-specific directory)
+          File.expand_path("../#{ruby_platform}/#{binary_name}", __dir__),
+          # Precompiled binary in gem (lib/methodray directory)
+          File.expand_path("../#{binary_name}", __dir__),
+          # Development: rust/target/release
+          File.expand_path("../../../rust/target/release/#{binary_name}", __dir__),
+          # Development: target/release (from project root)
+          File.expand_path("../../../target/release/#{binary_name}", __dir__)
         ]
 
         candidates.find { |path| File.executable?(path) }
+      end
+
+      def detect_ruby_platform
+        cpu = case RbConfig::CONFIG['host_cpu']
+              when /x86_64|amd64/ then 'x86_64'
+              when /arm64|aarch64/ then 'arm64'
+              else RbConfig::CONFIG['host_cpu']
+              end
+
+        os = case RbConfig::CONFIG['host_os']
+             when /darwin/ then 'darwin'
+             when /linux/ then 'linux'
+             when /mingw|mswin/ then 'mingw'
+             else RbConfig::CONFIG['host_os']
+             end
+
+        "#{cpu}-#{os}"
       end
     end
   end

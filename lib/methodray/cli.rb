@@ -1,4 +1,6 @@
-require_relative "commands"
+# frozen_string_literal: true
+
+require_relative 'commands'
 
 module MethodRay
   class CLI
@@ -6,15 +8,15 @@ module MethodRay
       command = args.shift
 
       case command
-      when "help", "--help", "-h", nil
+      when 'help', '--help', '-h', nil
         Commands.help
-      when "version", "--version", "-v"
+      when 'version', '--version', '-v'
         Commands.version
-      when "check"
+      when 'check'
         Commands.check(args)
-      when "watch"
+      when 'watch'
         Commands.watch(args)
-      when "clear-cache"
+      when 'clear-cache'
         Commands.clear_cache(args)
       else
         puts "Unknown command: #{command}"
