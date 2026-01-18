@@ -1,9 +1,11 @@
-use crate::rbs::loader::RbsMethodInfo;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::time::SystemTime;
+
+#[cfg(feature = "ruby-ffi")]
+use crate::rbs::loader::RbsMethodInfo;
 
 /// Binary cache for RBS method definitions
 #[derive(Serialize, Deserialize, Debug)]
@@ -67,6 +69,7 @@ impl RbsCache {
     }
 
     /// Convert to RbsMethodInfo
+    #[cfg(feature = "ruby-ffi")]
     pub fn to_method_infos(&self) -> Vec<RbsMethodInfo> {
         self.methods
             .iter()
@@ -79,6 +82,7 @@ impl RbsCache {
     }
 
     /// Create from RbsMethodInfo
+    #[cfg(feature = "ruby-ffi")]
     pub fn from_method_infos(
         methods: Vec<RbsMethodInfo>,
         version: String,

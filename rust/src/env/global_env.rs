@@ -188,7 +188,7 @@ impl GlobalEnv {
         while let Some(box_id) = self.run_queue.pop_front() {
             self.run_queue_set.remove(&box_id);
 
-            if let Some(box_obj) = self.boxes.get_mut(&box_id) {
+            if self.boxes.contains_key(&box_id) {
                 let mut changes = ChangeSet::new();
 
                 // Execute Box (temporarily remove to avoid &mut self borrow issue)

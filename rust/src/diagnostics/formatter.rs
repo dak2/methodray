@@ -5,7 +5,7 @@ use std::path::Path;
 /// Format diagnostics in LSP-compatible format
 ///
 /// Example output:
-/// ```
+/// ```text
 /// app/models/user.rb:10:5: error: undefined method `upcase` for Integer
 /// ```
 pub fn format_diagnostics(diagnostics: &[Diagnostic]) -> String {
@@ -28,7 +28,7 @@ pub fn format_diagnostics(diagnostics: &[Diagnostic]) -> String {
 /// Format diagnostics with code snippet
 ///
 /// Example output:
-/// ```
+/// ```text
 /// app/models/user.rb:10:5: error: undefined method `upcase` for Integer
 ///    x.upcase
 ///      ^^^^^^
