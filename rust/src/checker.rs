@@ -69,17 +69,17 @@ fn load_rbs_from_cache(genv: &mut GlobalEnv) -> Result<()> {
          ruby -rmethodray -e 'MethodRay::Analyzer.new(\".\").infer_types(\"x=1\")'",
     )?;
 
-    let methods = cache.to_method_infos();
+    let methods = cache.methods();
     eprintln!("Loaded {} methods from cache", methods.len());
 
     for method_info in methods {
         let receiver_type = Type::Instance {
-            class_name: method_info.receiver_class,
+            class_name: method_info.receiver_class.clone(),
         };
         genv.register_builtin_method(
             receiver_type,
             &method_info.method_name,
-            method_info.return_type,
+            method_info.return_type(),
         );
     }
 

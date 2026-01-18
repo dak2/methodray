@@ -1,4 +1,6 @@
-use methodray::lsp;
+//! LSP server binary entry point
+
+use methodray_core::lsp;
 
 #[tokio::main]
 async fn main() {

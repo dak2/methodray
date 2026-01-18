@@ -28,6 +28,15 @@ pub struct SerializableMethodInfo {
     pub return_type_str: String, // Simplified: store as string
 }
 
+impl SerializableMethodInfo {
+    /// Parse return type string into Type (simple parser for cached data)
+    pub fn return_type(&self) -> crate::types::Type {
+        crate::types::Type::Instance {
+            class_name: self.return_type_str.clone(),
+        }
+    }
+}
+
 impl RbsCache {
     /// Get cache file path
     pub fn cache_path() -> Result<PathBuf> {
@@ -68,7 +77,12 @@ impl RbsCache {
         self.version == current_version && self.rbs_version == current_rbs_version
     }
 
-    /// Convert to RbsMethodInfo
+    /// Get methods for registration (works without ruby-ffi feature)
+    pub fn methods(&self) -> &[SerializableMethodInfo] {
+        &self.methods
+    }
+
+    /// Convert to RbsMethodInfo (requires ruby-ffi for full type parsing)
     #[cfg(feature = "ruby-ffi")]
     pub fn to_method_infos(&self) -> Vec<RbsMethodInfo> {
         self.methods

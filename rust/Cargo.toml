@@ -14,7 +14,7 @@ required-features = ["cli"]
 
 [[bin]]
 name = "methodray-lsp"
-path = "src/bin/methodray-lsp.rs"
+path = "src/lsp/main.rs"
 required-features = ["lsp"]
 
 [dependencies]

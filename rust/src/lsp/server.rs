@@ -2,7 +2,6 @@ use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 use std::collections::HashMap;
-use std::path::PathBuf;
 use tokio::sync::RwLock;
 use anyhow::Context;
 
