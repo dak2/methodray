@@ -1,9 +1,11 @@
 //! Literal Handlers - Processing Ruby literal values
 //!
 //! This module is responsible for:
-//! - String, Integer, Array, Hash literals
+//! - String, Integer, Hash literals
 //! - nil, true, false, Symbol literals
 //! - Creating Source vertices with fixed types
+//!
+//! Note: Array literals are handled in install.rs for element type inference
 
 use crate::env::GlobalEnv;
 use crate::graph::VertexId;
@@ -11,6 +13,9 @@ use crate::types::Type;
 use ruby_prism::Node;
 
 /// Install literal nodes and return their VertexId
+///
+/// Note: Array literals are NOT handled here because they require
+/// child processing for element type inference. See install.rs.
 pub fn install_literal(genv: &mut GlobalEnv, node: &Node) -> Option<VertexId> {
     // "hello"
     if node.as_string_node().is_some() {
@@ -20,11 +25,6 @@ pub fn install_literal(genv: &mut GlobalEnv, node: &Node) -> Option<VertexId> {
     // 42
     if node.as_integer_node().is_some() {
         return Some(genv.new_source(Type::integer()));
-    }
-
-    // [1, 2, 3]
-    if node.as_array_node().is_some() {
-        return Some(genv.new_source(Type::array()));
     }
 
     // {a: 1}

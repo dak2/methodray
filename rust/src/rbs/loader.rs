@@ -2,6 +2,7 @@ use crate::env::GlobalEnv;
 use crate::rbs::converter::RbsTypeConverter;
 use crate::rbs::error::RbsError;
 use crate::types::Type;
+use magnus::value::ReprValue;
 use magnus::{Error, RArray, RHash, Ruby, TryConvert, Value};
 
 /// Method information loaded from RBS
@@ -10,6 +11,7 @@ pub struct RbsMethodInfo {
     pub receiver_class: String,
     pub method_name: String,
     pub return_type: Type,
+    pub block_param_types: Option<Vec<String>>,
 }
 
 /// Loader that calls RBS API via magnus to load method information
@@ -100,10 +102,33 @@ impl<'a> RbsLoader<'a> {
             // Convert RBS type string to internal Type enum
             let return_type = RbsTypeConverter::parse(&return_type_str);
 
+            // Parse block_param_types (optional)
+            let block_param_types: Option<Vec<String>> =
+                if let Some(bpt_value) = hash.get(self.ruby.to_symbol("block_param_types")) {
+                    if bpt_value.is_nil() {
+                        None
+                    } else if let Ok(bpt_array) = RArray::try_convert(bpt_value) {
+                        let types: Vec<String> = bpt_array
+                            .into_iter()
+                            .filter_map(|v| String::try_convert(v).ok())
+                            .collect();
+                        if types.is_empty() {
+                            None
+                        } else {
+                            Some(types)
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
             method_infos.push(RbsMethodInfo {
                 receiver_class,
                 method_name,
                 return_type,
+                block_param_types,
             });
         }
 
@@ -144,10 +169,18 @@ pub fn register_rbs_methods(genv: &mut GlobalEnv, ruby: &Ruby) -> Result<usize, 
         let receiver_type = Type::Instance {
             class_name: method_info.receiver_class,
         };
-        genv.register_builtin_method(
+        // Convert block param type strings to Type enums
+        let block_param_types = method_info.block_param_types.map(|types| {
+            types
+                .iter()
+                .map(|s| RbsTypeConverter::parse(s))
+                .collect()
+        });
+        genv.register_builtin_method_with_block(
             receiver_type,
             &method_info.method_name,
             method_info.return_type,
+            block_param_types,
         );
     }
 

@@ -6,6 +6,7 @@ Cargo.lock
 
 # Ruby
 lib/methodray/methodray.*
+lib/methodray/methodray-cli*
 lib/methodray/*.{so,bundle,dll}
 *.gem
 .bundle/

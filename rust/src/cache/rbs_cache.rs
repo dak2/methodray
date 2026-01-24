@@ -26,6 +26,8 @@ pub struct SerializableMethodInfo {
     pub receiver_class: String,
     pub method_name: String,
     pub return_type_str: String, // Simplified: store as string
+    #[serde(default)]
+    pub block_param_types: Option<Vec<String>>,
 }
 
 impl SerializableMethodInfo {
@@ -122,6 +124,7 @@ impl RbsCache {
                 receiver_class: m.receiver_class.clone(),
                 method_name: m.method_name.clone(),
                 return_type: crate::rbs::converter::RbsTypeConverter::parse(&m.return_type_str),
+                block_param_types: m.block_param_types.clone(),
             })
             .collect()
     }
@@ -139,6 +142,7 @@ impl RbsCache {
                 receiver_class: m.receiver_class,
                 method_name: m.method_name,
                 return_type_str: m.return_type.show(),
+                block_param_types: m.block_param_types,
             })
             .collect();
 
@@ -165,6 +169,7 @@ mod tests {
                 receiver_class: "String".to_string(),
                 method_name: "upcase".to_string(),
                 return_type_str: "String".to_string(),
+                block_param_types: None,
             }],
             timestamp: SystemTime::now(),
         };
@@ -196,6 +201,7 @@ mod tests {
             receiver_class: "String".to_string(),
             method_name: "upcase".to_string(),
             return_type_str: "String".to_string(),
+            block_param_types: None,
         };
 
         let return_type = method_info.return_type();
@@ -212,11 +218,13 @@ mod tests {
                     receiver_class: "String".to_string(),
                     method_name: "upcase".to_string(),
                     return_type_str: "String".to_string(),
+                    block_param_types: None,
                 },
                 SerializableMethodInfo {
                     receiver_class: "Integer".to_string(),
                     method_name: "to_s".to_string(),
                     return_type_str: "String".to_string(),
+                    block_param_types: None,
                 },
             ],
             timestamp: SystemTime::now(),
@@ -243,11 +251,13 @@ mod tests {
                     receiver_class: "String".to_string(),
                     method_name: "upcase".to_string(),
                     return_type_str: "String".to_string(),
+                    block_param_types: None,
                 },
                 SerializableMethodInfo {
                     receiver_class: "Array".to_string(),
                     method_name: "first".to_string(),
                     return_type_str: "Object".to_string(),
+                    block_param_types: None,
                 },
             ],
             timestamp: SystemTime::now(),

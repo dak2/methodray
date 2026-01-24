@@ -115,6 +115,11 @@ impl GlobalEnv {
                 }
             }
         }
+
+        // Reschedule boxes that need to run again
+        for box_id in changes.take_reschedule_boxes() {
+            self.box_manager.add_run(box_id);
+        }
     }
 
     /// Execute all Boxes
@@ -143,6 +148,18 @@ impl GlobalEnv {
     /// Register built-in method
     pub fn register_builtin_method(&mut self, recv_ty: Type, method_name: &str, ret_ty: Type) {
         self.method_registry.register(recv_ty, method_name, ret_ty);
+    }
+
+    /// Register built-in method with block parameter types
+    pub fn register_builtin_method_with_block(
+        &mut self,
+        recv_ty: Type,
+        method_name: &str,
+        ret_ty: Type,
+        block_param_types: Option<Vec<Type>>,
+    ) {
+        self.method_registry
+            .register_with_block(recv_ty, method_name, ret_ty, block_param_types);
     }
 
     // ===== Type Errors =====

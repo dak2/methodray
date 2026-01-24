@@ -13,3 +13,4 @@ pub mod vertex_manager;
 
 pub use global_env::GlobalEnv;
 pub use local_env::LocalEnv;
+pub use scope::ScopeKind;
