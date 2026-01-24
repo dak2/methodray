@@ -1,3 +1,4 @@
+use super::r#box::BoxId;
 use super::VertexId;
 
 /// Manages edge changes for type propagation
@@ -5,6 +6,8 @@ use super::VertexId;
 pub struct ChangeSet {
     new_edges: Vec<(VertexId, VertexId)>,
     edges: Vec<(VertexId, VertexId)>,
+    /// Boxes to reschedule for later execution
+    reschedule_boxes: Vec<BoxId>,
 }
 
 impl ChangeSet {
@@ -12,12 +15,23 @@ impl ChangeSet {
         Self {
             new_edges: Vec::new(),
             edges: Vec::new(),
+            reschedule_boxes: Vec::new(),
         }
     }
 
     /// Add edge
     pub fn add_edge(&mut self, src: VertexId, dst: VertexId) {
         self.new_edges.push((src, dst));
+    }
+
+    /// Request to reschedule a Box for later execution
+    pub fn reschedule(&mut self, box_id: BoxId) {
+        self.reschedule_boxes.push(box_id);
+    }
+
+    /// Get and clear boxes that need to be rescheduled
+    pub fn take_reschedule_boxes(&mut self) -> Vec<BoxId> {
+        std::mem::take(&mut self.reschedule_boxes)
     }
 
     /// Commit changes and return list of added/removed edges

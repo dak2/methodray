@@ -21,6 +21,11 @@ fn analyze(source: &str) -> (GlobalEnv, LocalEnv) {
     genv.register_builtin_method(Type::string(), "upcase", Type::string());
     genv.register_builtin_method(Type::string(), "downcase", Type::string());
 
+    // Register iterator methods for block tests
+    genv.register_builtin_method(Type::array(), "each", Type::array());
+    genv.register_builtin_method(Type::array(), "map", Type::array());
+    genv.register_builtin_method(Type::hash(), "each", Type::hash());
+
     let mut lenv = LocalEnv::new();
     let mut installer = AstInstaller::new(&mut genv, &mut lenv, source);
 
@@ -294,5 +299,109 @@ end
     let (genv, _lenv) = analyze(source);
 
     // No type errors - optional.upcase should work (String has upcase)
+    assert_eq!(genv.type_errors.len(), 0);
+}
+
+// ============================================
+// Block Tests
+// ============================================
+
+#[test]
+fn test_block_parameter_available_as_local_var() {
+    let source = r#"
+x = [1, 2, 3]
+x.each { |item| y = item }
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    // No type errors should occur - item parameter should be available in block
+    assert_eq!(genv.type_errors.len(), 0);
+}
+
+#[test]
+fn test_block_with_multiple_parameters() {
+    let source = r#"
+x = { a: 1, b: 2 }
+x.each { |key, value| a = key; b = value }
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    // No type errors should occur - both parameters should be available
+    assert_eq!(genv.type_errors.len(), 0);
+}
+
+#[test]
+fn test_block_do_end_syntax() {
+    let source = r#"
+x = [1, 2, 3]
+x.map do |item|
+  y = item
+end
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    // No type errors should occur - do...end blocks work the same as { }
+    assert_eq!(genv.type_errors.len(), 0);
+}
+
+#[test]
+fn test_block_accesses_outer_scope_variable() {
+    let source = r#"
+outer = "hello"
+x = [1, 2, 3]
+x.each { |item| y = outer.upcase }
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    // No type errors - block can access outer scope variable
+    assert_eq!(genv.type_errors.len(), 0);
+}
+
+#[test]
+fn test_nested_blocks() {
+    let source = r#"
+x = [[1, 2], [3, 4]]
+x.each { |row| row.each { |item| y = item } }
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    // No type errors should occur - nested blocks work correctly
+    assert_eq!(genv.type_errors.len(), 0);
+}
+
+#[test]
+fn test_block_in_method_definition() {
+    let source = r#"
+def process_items
+  items = [1, 2, 3]
+  items.each { |item| x = item }
+end
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    // No type errors should occur - blocks work inside methods
+    assert_eq!(genv.type_errors.len(), 0);
+}
+
+#[test]
+fn test_block_in_class_method() {
+    let source = r#"
+class Processor
+  def process
+    items = [1, 2, 3]
+    items.map { |item| item }
+  end
+end
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    // No type errors should occur
     assert_eq!(genv.type_errors.len(), 0);
 }

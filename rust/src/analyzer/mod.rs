@@ -1,3 +1,4 @@
+mod blocks;
 mod calls;
 mod definitions;
 mod dispatch;

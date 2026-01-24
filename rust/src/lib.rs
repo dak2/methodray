@@ -11,7 +11,8 @@ pub mod parser;
 pub mod source_map;
 pub mod types;
 
-#[cfg(feature = "ruby-ffi")]
+// rbs module is always available (converter has no Ruby FFI dependency)
+// but loader and error require ruby-ffi feature
 pub mod rbs;
 
 #[cfg(any(feature = "cli", feature = "lsp"))]

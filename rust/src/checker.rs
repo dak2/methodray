@@ -62,6 +62,7 @@ impl FileChecker {
 /// Load RBS methods from cache (CLI mode without Ruby runtime)
 fn load_rbs_from_cache(genv: &mut GlobalEnv) -> Result<()> {
     use crate::cache::RbsCache;
+    use crate::rbs::converter::RbsTypeConverter;
     use crate::types::Type;
 
     let cache = RbsCache::load().context(
@@ -75,10 +76,20 @@ fn load_rbs_from_cache(genv: &mut GlobalEnv) -> Result<()> {
         let receiver_type = Type::Instance {
             class_name: method_info.receiver_class.clone(),
         };
-        genv.register_builtin_method(
+
+        // Convert block param type strings to Type enums
+        let block_param_types = method_info.block_param_types.as_ref().map(|types| {
+            types
+                .iter()
+                .map(|s| RbsTypeConverter::parse(s))
+                .collect()
+        });
+
+        genv.register_builtin_method_with_block(
             receiver_type,
             &method_info.method_name,
             method_info.return_type(),
+            block_param_types,
         );
     }
 

@@ -9,7 +9,6 @@ use crate::source_map::SourceLocation;
 use ruby_prism::Node;
 
 use super::calls::install_method_call;
-use super::literals::install_literal;
 use super::variables::{
     install_ivar_read, install_ivar_write, install_local_var_read, install_local_var_write,
     install_self,
@@ -34,10 +33,15 @@ pub enum NeedsChildKind<'a> {
         receiver: Node<'a>,
         method_name: String,
         location: SourceLocation,
+        /// Optional block attached to the method call
+        block: Option<Node<'a>>,
     },
 }
 
 /// First pass: check if node can be handled immediately without child processing
+///
+/// Note: Literals (including Array) are handled in install.rs via install_literal
+/// because Array literals need child processing for element type inference.
 pub fn dispatch_simple(genv: &mut GlobalEnv, lenv: &mut LocalEnv, node: &Node) -> DispatchResult {
     // Instance variable read: @name
     if let Some(ivar_read) = node.as_instance_variable_read_node() {
@@ -60,11 +64,6 @@ pub fn dispatch_simple(genv: &mut GlobalEnv, lenv: &mut LocalEnv, node: &Node) -
             Some(vtx) => DispatchResult::Vertex(vtx),
             None => DispatchResult::NotHandled,
         };
-    }
-
-    // Literals (String, Integer, Array, Hash, nil, true, false, Symbol)
-    if let Some(vtx) = install_literal(genv, node) {
-        return DispatchResult::Vertex(vtx);
     }
 
     DispatchResult::NotHandled
@@ -90,16 +89,21 @@ pub fn dispatch_needs_child<'a>(node: &Node<'a>, source: &str) -> Option<NeedsCh
         });
     }
 
-    // Method call: x.upcase
+    // Method call: x.upcase or x.each { |i| ... }
     if let Some(call_node) = node.as_call_node() {
         if let Some(receiver) = call_node.receiver() {
             let method_name = String::from_utf8_lossy(call_node.name().as_slice()).to_string();
             let location =
                 SourceLocation::from_prism_location_with_source(&node.location(), source);
+
+            // Get block if present (e.g., `x.each { |i| ... }`)
+            let block = call_node.block();
+
             return Some(NeedsChildKind::MethodCall {
                 receiver,
                 method_name,
                 location,
+                block,
             });
         }
     }

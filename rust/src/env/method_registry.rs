@@ -7,6 +7,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct MethodInfo {
     pub return_type: Type,
+    pub block_param_types: Option<Vec<Type>>,
 }
 
 /// Registry for method definitions
@@ -25,18 +26,48 @@ impl MethodRegistry {
 
     /// Register a method for a receiver type
     pub fn register(&mut self, recv_ty: Type, method_name: &str, ret_ty: Type) {
+        self.register_with_block(recv_ty, method_name, ret_ty, None);
+    }
+
+    /// Register a method with block parameter types
+    pub fn register_with_block(
+        &mut self,
+        recv_ty: Type,
+        method_name: &str,
+        ret_ty: Type,
+        block_param_types: Option<Vec<Type>>,
+    ) {
         self.methods.insert(
             (recv_ty, method_name.to_string()),
             MethodInfo {
                 return_type: ret_ty,
+                block_param_types,
             },
         );
     }
 
     /// Resolve a method for a receiver type
+    ///
+    /// For generic types like `Array[Integer]`, first tries exact match,
+    /// then falls back to base class match (`Array`).
     pub fn resolve(&self, recv_ty: &Type, method_name: &str) -> Option<&MethodInfo> {
-        self.methods
+        // First, try exact match
+        if let Some(info) = self
+            .methods
             .get(&(recv_ty.clone(), method_name.to_string()))
+        {
+            return Some(info);
+        }
+
+        // For generic types, fall back to base class
+        if let Type::Generic { class_name, .. } = recv_ty {
+            let base_type = Type::Instance {
+                class_name: class_name.clone(),
+            };
+            return self.methods.get(&(base_type, method_name.to_string()));
+        }
+
+        None
     }
 }
 
