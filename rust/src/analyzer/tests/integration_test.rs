@@ -21,6 +21,14 @@ fn analyze(source: &str) -> (GlobalEnv, LocalEnv) {
     genv.register_builtin_method(Type::string(), "upcase", Type::string());
     genv.register_builtin_method(Type::string(), "downcase", Type::string());
 
+    // Register Float methods
+    genv.register_builtin_method(Type::float(), "to_s", Type::string());
+    genv.register_builtin_method(Type::float(), "to_i", Type::integer());
+    genv.register_builtin_method(Type::float(), "round", Type::integer());
+    genv.register_builtin_method(Type::float(), "ceil", Type::integer());
+    genv.register_builtin_method(Type::float(), "floor", Type::integer());
+    genv.register_builtin_method(Type::float(), "abs", Type::float());
+
     // Register iterator methods for block tests
     genv.register_builtin_method(Type::array(), "each", Type::array());
     genv.register_builtin_method(Type::array(), "map", Type::array());
@@ -404,4 +412,62 @@ end
 
     // No type errors should occur
     assert_eq!(genv.type_errors.len(), 0);
+}
+
+// ============================================
+// Float Literal Tests
+// ============================================
+
+#[test]
+fn test_float_literal_basic() {
+    let source = r#"x = 3.14"#;
+
+    let (genv, lenv) = analyze(source);
+
+    let x_vtx = lenv.get_var("x").unwrap();
+    assert_eq!(genv.get_vertex(x_vtx).unwrap().show(), "Float");
+}
+
+#[test]
+fn test_float_literal_type_error() {
+    let source = r#"
+class Calculator
+  def compute
+    x = 3.14
+    y = x.upcase
+  end
+end
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    // Type error should be detected: Float doesn't have upcase method
+    assert_eq!(genv.type_errors.len(), 1);
+    assert_eq!(genv.type_errors[0].method_name, "upcase");
+}
+
+#[test]
+fn test_float_specific_methods() {
+    let source = r#"
+x = 3.14
+a = x.ceil
+b = x.floor
+c = x.abs
+"#;
+
+    let (genv, lenv) = analyze(source);
+
+    // No type errors - ceil, floor, abs are valid Float methods
+    assert_eq!(genv.type_errors.len(), 0);
+
+    // ceil and floor return Integer
+    let a_vtx = lenv.get_var("a").unwrap();
+    assert_eq!(genv.get_vertex(a_vtx).unwrap().show(), "Integer");
+
+    let b_vtx = lenv.get_var("b").unwrap();
+    assert_eq!(genv.get_vertex(b_vtx).unwrap().show(), "Integer");
+
+    // abs returns Float
+    let c_vtx = lenv.get_var("c").unwrap();
+    assert_eq!(genv.get_vertex(c_vtx).unwrap().show(), "Float");
 }
