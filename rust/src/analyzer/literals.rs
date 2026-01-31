@@ -1,7 +1,7 @@
 //! Literal Handlers - Processing Ruby literal values
 //!
 //! This module is responsible for:
-//! - String, Integer, Float, Hash literals
+//! - String, Integer, Float, Hash, Regexp literals
 //! - nil, true, false, Symbol literals
 //! - Creating Source vertices with fixed types
 //!
@@ -57,6 +57,11 @@ pub fn install_literal(genv: &mut GlobalEnv, node: &Node) -> Option<VertexId> {
         return Some(genv.new_source(Type::symbol()));
     }
 
+    // /pattern/
+    if node.as_regular_expression_node().is_some() {
+        return Some(genv.new_source(Type::regexp()));
+    }
+
     None
 }
 
@@ -88,5 +93,13 @@ mod tests {
 
         let vtx = genv.new_source(Type::float());
         assert_eq!(genv.get_source(vtx).unwrap().ty.show(), "Float");
+    }
+
+    #[test]
+    fn test_install_regexp_literal() {
+        let mut genv = GlobalEnv::new();
+
+        let vtx = genv.new_source(Type::regexp());
+        assert_eq!(genv.get_source(vtx).unwrap().ty.show(), "Regexp");
     }
 }

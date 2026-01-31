@@ -34,6 +34,11 @@ fn analyze(source: &str) -> (GlobalEnv, LocalEnv) {
     genv.register_builtin_method(Type::array(), "map", Type::array());
     genv.register_builtin_method(Type::hash(), "each", Type::hash());
 
+    // Register Regexp methods
+    genv.register_builtin_method(Type::regexp(), "match", Type::instance("MatchData"));
+    genv.register_builtin_method(Type::regexp(), "match?", Type::instance("TrueClass"));
+    genv.register_builtin_method(Type::regexp(), "source", Type::string());
+
     let mut lenv = LocalEnv::new();
     let mut installer = AstInstaller::new(&mut genv, &mut lenv, source);
 
@@ -470,4 +475,53 @@ c = x.abs
     // abs returns Float
     let c_vtx = lenv.get_var("c").unwrap();
     assert_eq!(genv.get_vertex(c_vtx).unwrap().show(), "Float");
+}
+
+// ============================================
+// Regexp Literal Tests
+// ============================================
+
+#[test]
+fn test_regexp_literal_basic() {
+    let source = r#"x = /hello/"#;
+
+    let (genv, lenv) = analyze(source);
+
+    let x_vtx = lenv.get_var("x").unwrap();
+    assert_eq!(genv.get_vertex(x_vtx).unwrap().show(), "Regexp");
+}
+
+#[test]
+fn test_regexp_literal_type_error() {
+    let source = r#"
+class Matcher
+  def find
+    x = /pattern/
+    y = x.upcase
+  end
+end
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    // Type error should be detected: Regexp doesn't have upcase method
+    assert_eq!(genv.type_errors.len(), 1);
+    assert_eq!(genv.type_errors[0].method_name, "upcase");
+}
+
+#[test]
+fn test_regexp_specific_methods() {
+    let source = r#"
+x = /hello/
+a = x.source
+"#;
+
+    let (genv, lenv) = analyze(source);
+
+    // No type errors - source is a valid Regexp method
+    assert_eq!(genv.type_errors.len(), 0);
+
+    // source returns String
+    let a_vtx = lenv.get_var("a").unwrap();
+    assert_eq!(genv.get_vertex(a_vtx).unwrap().show(), "String");
 }

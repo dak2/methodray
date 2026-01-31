@@ -242,6 +242,12 @@ impl Type {
         }
     }
 
+    pub fn regexp() -> Self {
+        Type::Instance {
+            name: QualifiedName::simple("Regexp"),
+        }
+    }
+
     /// Create a generic Array type: Array[element_type]
     pub fn array_of(element_type: Type) -> Self {
         Type::Generic {
