@@ -248,6 +248,12 @@ impl Type {
         }
     }
 
+    pub fn range() -> Self {
+        Type::Instance {
+            name: QualifiedName::simple("Range"),
+        }
+    }
+
     /// Create a generic Array type: Array[element_type]
     pub fn array_of(element_type: Type) -> Self {
         Type::Generic {
