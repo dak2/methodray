@@ -39,6 +39,15 @@ fn analyze(source: &str) -> (GlobalEnv, LocalEnv) {
     genv.register_builtin_method(Type::regexp(), "match?", Type::instance("TrueClass"));
     genv.register_builtin_method(Type::regexp(), "source", Type::string());
 
+    // Register Range methods
+    genv.register_builtin_method(Type::range(), "to_a", Type::array());
+    genv.register_builtin_method(Type::range(), "size", Type::integer());
+    genv.register_builtin_method(Type::range(), "count", Type::integer());
+    genv.register_builtin_method(Type::range(), "first", Type::Bot);
+    genv.register_builtin_method(Type::range(), "last", Type::Bot);
+    genv.register_builtin_method(Type::range(), "include?", Type::instance("TrueClass"));
+    genv.register_builtin_method(Type::range(), "cover?", Type::instance("TrueClass"));
+
     let mut lenv = LocalEnv::new();
     let mut installer = AstInstaller::new(&mut genv, &mut lenv, source);
 
@@ -524,4 +533,74 @@ a = x.source
     // source returns String
     let a_vtx = lenv.get_var("a").unwrap();
     assert_eq!(genv.get_vertex(a_vtx).unwrap().show(), "String");
+}
+
+// ============================================
+// Range Literal Tests
+// ============================================
+
+#[test]
+fn test_range_literal_basic() {
+    let source = r#"x = 1..5"#;
+
+    let (genv, lenv) = analyze(source);
+
+    let x_vtx = lenv.get_var("x").unwrap();
+    assert_eq!(genv.get_vertex(x_vtx).unwrap().show(), "Range");
+}
+
+#[test]
+fn test_range_literal_exclusive() {
+    let source = r#"x = 1...5"#;
+
+    let (genv, lenv) = analyze(source);
+
+    let x_vtx = lenv.get_var("x").unwrap();
+    assert_eq!(genv.get_vertex(x_vtx).unwrap().show(), "Range");
+}
+
+#[test]
+fn test_range_literal_string() {
+    let source = r#"x = "a".."z""#;
+
+    let (genv, lenv) = analyze(source);
+
+    let x_vtx = lenv.get_var("x").unwrap();
+    assert_eq!(genv.get_vertex(x_vtx).unwrap().show(), "Range");
+}
+
+#[test]
+fn test_range_literal_type_error() {
+    let source = r#"
+class Calculator
+  def compute
+    x = 1..10
+    y = x.upcase
+  end
+end
+"#;
+
+    let (genv, _lenv) = analyze(source);
+
+    assert_eq!(genv.type_errors.len(), 1);
+    assert_eq!(genv.type_errors[0].method_name, "upcase");
+}
+
+#[test]
+fn test_range_specific_methods() {
+    let source = r#"
+x = 1..10
+a = x.to_a
+b = x.size
+"#;
+
+    let (genv, lenv) = analyze(source);
+
+    assert_eq!(genv.type_errors.len(), 0);
+
+    let a_vtx = lenv.get_var("a").unwrap();
+    assert_eq!(genv.get_vertex(a_vtx).unwrap().show(), "Array");
+
+    let b_vtx = lenv.get_var("b").unwrap();
+    assert_eq!(genv.get_vertex(b_vtx).unwrap().show(), "Integer");
 }
